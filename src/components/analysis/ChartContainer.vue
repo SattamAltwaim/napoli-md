@@ -33,6 +33,7 @@ import InteractionSankey from '../charts/InteractionSankey.vue'
 import PolarConservation from '../charts/PolarConservation.vue'
 import ResidueRadar from '../charts/ResidueRadar.vue'
 import TypePersistenceMatrix from '../charts/TypePersistenceMatrix.vue'
+import DynamicContactLandscape from '../charts/DynamicContactLandscape.vue'
 
 const analysisStore = useAnalysisStore()
 const systemsStore = useSystemsStore()
@@ -65,7 +66,8 @@ const chartComponents = {
   interactionSankey: InteractionSankey,
   polarConservation: PolarConservation,
   residueRadar: ResidueRadar,
-  typePersistenceMatrix: TypePersistenceMatrix
+  typePersistenceMatrix: TypePersistenceMatrix,
+  dynamicContactLandscape: DynamicContactLandscape
 }
 
 const currentChartComponent = computed(() => {

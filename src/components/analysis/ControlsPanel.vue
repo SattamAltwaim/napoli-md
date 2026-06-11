@@ -251,7 +251,7 @@ const showLogScale = computed(() => {
 })
 
 const showInteractionFilter = computed(() => {
-  return ['filteredHeatmap', 'interactionConservationMatrix', 'dependencyWheel', 'interactionSankey', 'typePersistenceMatrix'].includes(chartUiStore.currentChartType)
+  return ['filteredHeatmap', 'interactionConservationMatrix', 'dependencyWheel', 'interactionSankey', 'typePersistenceMatrix', 'dynamicContactLandscape'].includes(chartUiStore.currentChartType)
 })
 
 const showTimeUnit = computed(() => {
