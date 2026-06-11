@@ -243,7 +243,7 @@ const SLIDER_MAX = 1
 const SLIDER_STEP = 0.1
 
 const showSlider = computed(() => {
-  return ['filteredHeatmap', 'dependencyWheel', 'interactionSankey'].includes(chartUiStore.currentChartType)
+  return ['filteredHeatmap', 'dependencyWheel', 'interactionSankey', 'typePersistenceMatrix'].includes(chartUiStore.currentChartType)
 })
 
 const showLogScale = computed(() => {
@@ -251,7 +251,7 @@ const showLogScale = computed(() => {
 })
 
 const showInteractionFilter = computed(() => {
-  return ['filteredHeatmap', 'interactionConservationMatrix', 'dependencyWheel', 'interactionSankey'].includes(chartUiStore.currentChartType)
+  return ['filteredHeatmap', 'interactionConservationMatrix', 'dependencyWheel', 'interactionSankey', 'typePersistenceMatrix'].includes(chartUiStore.currentChartType)
 })
 
 const showTimeUnit = computed(() => {

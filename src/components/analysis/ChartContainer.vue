@@ -32,6 +32,7 @@ import DependencyWheel from '../charts/DependencyWheel.vue'
 import InteractionSankey from '../charts/InteractionSankey.vue'
 import PolarConservation from '../charts/PolarConservation.vue'
 import ResidueRadar from '../charts/ResidueRadar.vue'
+import TypePersistenceMatrix from '../charts/TypePersistenceMatrix.vue'
 
 const analysisStore = useAnalysisStore()
 const systemsStore = useSystemsStore()
@@ -63,7 +64,8 @@ const chartComponents = {
   dependencyWheel: DependencyWheel,
   interactionSankey: InteractionSankey,
   polarConservation: PolarConservation,
-  residueRadar: ResidueRadar
+  residueRadar: ResidueRadar,
+  typePersistenceMatrix: TypePersistenceMatrix
 }
 
 const currentChartComponent = computed(() => {

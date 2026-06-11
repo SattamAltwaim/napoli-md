@@ -52,6 +52,11 @@ const charts = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5" opacity="0.2" fill="currentColor"/><polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5"/></svg>'
   },
   {
+    id: 'typePersistenceMatrix',
+    label: 'Type Persistence',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M3 17h18"/><path d="M10 3v18"/><path d="M17 3v18"/><rect x="10" y="3" width="7" height="7" fill="currentColor" opacity="0.25"/></svg>'
+  },
+  {
     id: 'residueRadar',
     label: 'Residue Radar',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 19.5,7 19.5,17 12,22 4.5,17 4.5,7"/><polygon points="12,6 16.5,9 16.5,15 12,18 7.5,15 7.5,9" opacity="0.3" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>'
