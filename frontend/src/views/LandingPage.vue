@@ -520,7 +520,7 @@ const pollStatus = (jobId) => {
         const analysisJobId = status.analysis_job_id
         if (analysisJobId) {
           addSubmittedJobId(analysisJobId)
-          router.push({ name: 'Analysis', params: { jobId: analysisJobId } })
+          router.push({ name: 'AnalysisJob', params: { jobId: analysisJobId } })
         } else {
           try {
             const systems = await api.getSystems()
@@ -528,7 +528,7 @@ const pollStatus = (jobId) => {
             const system = systems.find(s => s.id === systemId)
             if (system && system.jobId) {
               addSubmittedJobId(system.jobId)
-              router.push({ name: 'Analysis', params: { jobId: system.jobId } })
+              router.push({ name: 'AnalysisJob', params: { jobId: system.jobId } })
             } else {
               router.push({ name: 'Jobs' })
             }

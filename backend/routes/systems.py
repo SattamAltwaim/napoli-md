@@ -11,12 +11,10 @@ bp = Blueprint("systems", __name__)
 @bp.get("/systems")
 def list_systems():
     repo = get_repository()
-    return jsonify([repo.system()])
+    return jsonify(repo.systems())
 
 
 @bp.get("/systems/<system_id>")
 def get_system(system_id):
     repo = get_repository()
-    repo.validate_system(system_id)
-    return jsonify(repo.system())
-
+    return jsonify(repo.system(system_id))

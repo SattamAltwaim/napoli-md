@@ -9,21 +9,15 @@ from flask_cors import CORS
 from .data_loader import DataNotFoundError, TrajectoryRepository, UnknownSystemError
 
 
-DEFAULT_DATA_ROOT = (
-    Path(__file__).resolve().parents[1]
-    / "frontend"
-    / "public"
-    / "data"
-    / "simulated_trajectory_8cgk_6UQ"
-)
+DEFAULT_SYSTEMS_ROOT = Path(__file__).resolve().parents[1] / "systems"
 
 
 def get_repository():
-    data_root = Path(current_app.config["DATA_ROOT"]).resolve()
+    systems_root = Path(current_app.config["SYSTEMS_ROOT"]).resolve()
     repo = current_app.extensions.get("trajectory_repository")
 
-    if repo is None or repo.data_root != data_root:
-        repo = TrajectoryRepository(data_root)
+    if repo is None or repo.systems_root != systems_root:
+        repo = TrajectoryRepository(systems_root)
         current_app.extensions["trajectory_repository"] = repo
 
     return repo
@@ -32,7 +26,7 @@ def get_repository():
 def create_app(config=None):
     app = Flask(__name__)
     app.config.update(
-        DATA_ROOT=Path(os.environ.get("NAPOLI_DATA_ROOT", DEFAULT_DATA_ROOT)).resolve(),
+        SYSTEMS_ROOT=Path(os.environ.get("NAPOLI_SYSTEMS_ROOT", DEFAULT_SYSTEMS_ROOT)).resolve(),
         MAX_CONTENT_LENGTH=200 * 1024 * 1024,
     )
 
@@ -51,7 +45,7 @@ def create_app(config=None):
 
     @app.get("/api/health")
     def health():
-        return jsonify({"status": "ok", "dataRoot": str(app.config["DATA_ROOT"])})
+        return jsonify({"status": "ok", "systemsRoot": str(app.config["SYSTEMS_ROOT"])})
 
     @app.errorhandler(UnknownSystemError)
     def handle_unknown_system(error):
@@ -62,4 +56,3 @@ def create_app(config=None):
         return jsonify({"error": str(error)}), 404
 
     return app
-

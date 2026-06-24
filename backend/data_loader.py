@@ -6,6 +6,7 @@ import csv
 import json
 import re
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -230,7 +231,7 @@ def row_matches_pair(row, params):
     return True
 
 
-class TrajectoryRepository:
+class TrajectoryDataset:
     def __init__(self, data_root: Path):
         self.data_root = Path(data_root).resolve()
         self._manifest = None
@@ -240,8 +241,7 @@ class TrajectoryRepository:
         self._detail_rows = None
 
     def validate_system(self, system_id):
-        if system_id != SYSTEM_ID:
-            raise UnknownSystemError(f"Unknown system: {system_id}")
+        return None
 
     @property
     def manifest_path(self):
@@ -291,19 +291,24 @@ class TrajectoryRepository:
         chains = [chain for chain in raw.split() if chain]
         return chains or ["a", "l"]
 
-    def system(self):
+    def system(self, system_id=None):
+        system_id = system_id or self.data_root.name or SYSTEM_ID
         source = self.manifest().get("source", {})
         pdb = str(source.get("pdb", "8CGK")).upper()
         ligand = self.ligand_code()
         chains = self.interacting_chains()
+        date_created = datetime.fromtimestamp(self.data_root.stat().st_mtime, timezone.utc).isoformat()
 
         return {
-            "id": SYSTEM_ID,
+            "id": system_id,
             "name": f"{pdb} / {ligand} Simulated Trajectory",
             "frames": len(self.frame_numbers()),
             "chain1": "/".join(chains),
             "chain2": ligand,
-            "jobId": SYSTEM_ID,
+            "jobId": system_id,
+            "dateCreated": date_created,
+            "status": "ready",
+            "isExample": False,
         }
 
     def final_rows_by_frame(self):
@@ -632,3 +637,103 @@ class TrajectoryRepository:
 
         result.sort(key=lambda item: (-item["consistency"], -item["totalMeasurements"]))
         return {"system": system_id, "pairs": result}
+
+
+class TrajectoryRepository:
+    """Discovers system/job folders and delegates aggregation to per-job readers."""
+
+    def __init__(self, systems_root: Path):
+        self.systems_root = Path(systems_root).resolve()
+        self._datasets = {}
+
+    @property
+    def data_root(self):
+        return self.systems_root
+
+    def _is_system_dir(self, path: Path):
+        if not path.is_dir():
+            return False
+        return any(child.is_dir() and child.name.startswith("frame_") for child in path.iterdir())
+
+    def system_dirs(self):
+        if not self.systems_root.exists():
+            raise DataNotFoundError(f"Missing systems directory: {self.systems_root}")
+
+        if self._is_system_dir(self.systems_root):
+            return [self.systems_root]
+
+        return [
+            path
+            for path in sorted(self.systems_root.iterdir(), key=lambda item: item.name.lower())
+            if not path.name.startswith(".") and self._is_system_dir(path)
+        ]
+
+    def system_dir(self, system_id):
+        for path in self.system_dirs():
+            if path.name == system_id:
+                return path
+
+        dirs = self.system_dirs()
+        if system_id == SYSTEM_ID and len(dirs) == 1:
+            return dirs[0]
+
+        raise UnknownSystemError(f"Unknown system: {system_id}")
+
+    def dataset(self, system_id):
+        path = self.system_dir(system_id)
+        cache_key = str(path)
+        if cache_key not in self._datasets:
+            self._datasets[cache_key] = TrajectoryDataset(path)
+        return self._datasets[cache_key]
+
+    def validate_system(self, system_id):
+        self.system_dir(system_id)
+
+    def systems(self):
+        systems = []
+        for path in self.system_dirs():
+            try:
+                systems.append(self.dataset(path.name).system(path.name))
+            except DataNotFoundError:
+                continue
+        return systems
+
+    def system(self, system_id):
+        return self.dataset(system_id).system(self.system_dir(system_id).name)
+
+    def jobs(self):
+        return [
+            {
+                "job_id": system["jobId"],
+                "pdb_name": system["name"],
+                "system_id": system["id"],
+                "analysis_job_id": system["jobId"],
+                "status": "completed",
+                "created_at": system.get("dateCreated"),
+                "frames": system.get("frames", 0),
+                "progress": 100,
+                "step_label": "complete",
+            }
+            for system in self.systems()
+        ]
+
+    def interactions(self, system_id):
+        return self.dataset(system_id).interactions(self.system_dir(system_id).name)
+
+    def area(self, system_id):
+        return self.dataset(system_id).area(self.system_dir(system_id).name)
+
+    def trends(self, system_id):
+        return self.dataset(system_id).trends(self.system_dir(system_id).name)
+
+    def atom_pairs(self, system_id, params):
+        return self.dataset(system_id).atom_pairs(self.system_dir(system_id).name, params)
+
+    def atom_pairs_batch(self, system_id, pairs):
+        return self.dataset(system_id).atom_pairs_batch(self.system_dir(system_id).name, pairs)
+
+    def interaction_distances(self, system_id):
+        return self.dataset(system_id).interaction_distances(self.system_dir(system_id).name)
+
+    def distance_distributions(self, system_id, interaction_types):
+        return self.dataset(system_id).distance_distributions(self.system_dir(system_id).name, interaction_types)

@@ -5,7 +5,7 @@
       <div class="header-content">
         <div class="header-text">
           <h1>Your Jobs</h1>
-          <p class="subtitle">Jobs you submit from this browser are listed here. Anyone with a link can still open an analysis by URL.</p>
+          <p class="subtitle">Available analyses on this server.</p>
         </div>
         <router-link to="/" class="submit-job-btn">
           <svg viewBox="0 0 16 16" fill="currentColor">
@@ -204,7 +204,6 @@ import { useRouter } from 'vue-router'
 import { useSystemsStore } from '../stores/systemsStore'
 import api from '../services/api'
 import AppFooter from '../components/layout/AppFooter.vue'
-import { getSubmittedJobIds, jobRowMatchesSubmitted } from '../utils/cocomapsmdJobIds.js'
 
 const router = useRouter()
 const systemsStore = useSystemsStore()
@@ -327,8 +326,7 @@ const loadAllJobs = async () => {
     }
 
     const rows = Array.from(merged.values())
-    const submitted = new Set(getSubmittedJobIds())
-    allJobs.value = rows.filter((job) => jobRowMatchesSubmitted(job, submitted))
+    allJobs.value = rows
   } catch (error) {
     console.error('Failed to load jobs:', error)
     allJobs.value = []
@@ -358,16 +356,10 @@ const isActiveJob = (job) => {
   return ['queued', 'splitting', 'analyzing', 'resuming'].includes(job.status)
 }
 
-const submittedJobIdCount = computed(() => getSubmittedJobIds().length)
-
-const emptyTitle = computed(() =>
-  submittedJobIdCount.value === 0 ? 'No jobs yet' : 'No matching jobs'
-)
+const emptyTitle = computed(() => 'No jobs yet')
 
 const emptyDescription = computed(() =>
-  submittedJobIdCount.value === 0
-    ? 'Submit a trajectory from this browser to see it here. Analysis links stay shareable with anyone.'
-    : 'Your saved job IDs did not match any current data on the server. If you cleared browser data or the server was reset, submit again from the home page.'
+  'No server jobs are available.'
 )
 
 // Filter by search query
@@ -450,7 +442,7 @@ const openJob = async (job) => {
     }
 
     await systemsStore.setCurrentSystem(system.id)
-    router.push({ name: 'Analysis', params: { jobId: system.jobId } })
+    router.push({ name: 'AnalysisJob', params: { jobId: system.jobId } })
   }
 }
 

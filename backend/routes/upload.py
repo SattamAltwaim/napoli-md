@@ -6,6 +6,8 @@ original backend README, so upload endpoints are intentionally inert.
 
 from flask import Blueprint, jsonify
 
+from ..app import get_repository
+
 
 bp = Blueprint("upload", __name__)
 
@@ -22,5 +24,4 @@ def status(job_id):
 
 @bp.get("/jobs")
 def jobs():
-    return jsonify([])
-
+    return jsonify(get_repository().jobs())

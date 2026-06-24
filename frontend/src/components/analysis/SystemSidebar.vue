@@ -51,7 +51,7 @@ const selectSystem = async (systemId) => {
 
   const system = systemsStore.systems.find(s => s.id === systemId)
   if (system && system.jobId) {
-    router.push({ name: 'Analysis', params: { jobId: system.jobId } })
+    router.push({ name: 'AnalysisJob', params: { jobId: system.jobId } })
   }
 
   emit('select-system', systemId)

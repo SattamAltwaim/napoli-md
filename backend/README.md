@@ -1,10 +1,17 @@
 # Backend
 
-Flask REST API for the bundled frame-split `8cgk / 6UQ` simulated trajectory.
+Flask REST API for frame-split NAPOLI trajectory jobs.
 
 ## Run
 
 From the repository root:
+
+```bash
+uv sync
+uv run python run_backend.py
+```
+
+Or with `pip`:
 
 ```bash
 python3 -m venv .venv
@@ -18,7 +25,7 @@ The API runs on `http://localhost:5001`.
 
 ## Notes
 
-- Data is read from `frontend/public/data/simulated_trajectory_8cgk_6UQ` by default.
-- Override the data folder with `NAPOLI_DATA_ROOT=/path/to/data`.
+- Jobs are discovered from `systems/` by default. Each child folder with `frame_*` directories is treated as one job.
+- Override the jobs folder with `NAPOLI_SYSTEMS_ROOT=/path/to/systems`.
 - Conserved islands are intentionally skipped and return `{"islands": []}`.
 - Upload endpoints are present but inert because the processing engine is not bundled.

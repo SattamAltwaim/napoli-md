@@ -73,7 +73,7 @@ onMounted(async () => {
     const first = systemsStore.systems[0]
     await systemsStore.setCurrentSystem(first.id)
     if (first.jobId) {
-      router.replace({ name: 'Analysis', params: { jobId: first.jobId } })
+      router.replace({ name: 'AnalysisJob', params: { jobId: first.jobId } })
     }
   }
 })
