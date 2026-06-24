@@ -265,6 +265,101 @@ const pairConservationTicks = computed(() => {
   return ticks
 })
 
+const buildPairGroups = (pairTypeCombinations) => {
+  const groups = []
+
+  pairTypeCombinations.forEach((combination, rowIndex) => {
+    const currentGroup = groups[groups.length - 1]
+    if (currentGroup && currentGroup.pair === combination.pair) {
+      currentGroup.end = rowIndex
+      currentGroup.rows.push(rowIndex)
+      return
+    }
+
+    groups.push({
+      pair: combination.pair,
+      start: rowIndex,
+      end: rowIndex,
+      rows: [rowIndex]
+    })
+  })
+
+  return groups
+}
+
+const drawPairHierarchyLabels = (chartInstance, pairGroups) => {
+  const yAxis = chartInstance.yAxis?.[0]
+  if (!yAxis || !pairGroups.length) return
+
+  if (chartInstance.pairHierarchyGroup) {
+    chartInstance.pairHierarchyGroup.destroy()
+  }
+
+  const renderer = chartInstance.renderer
+  const group = renderer.g('pair-hierarchy-labels').attr({ zIndex: 8 }).add()
+  chartInstance.pairHierarchyGroup = group
+
+  const plotLeft = chartInstance.plotLeft
+  const labelX = plotLeft - 54
+  const connectorStartX = labelX + 8
+  const bracketX = plotLeft - 34
+  const rowEndX = plotLeft - 8
+  const lineAttrs = {
+    stroke: '#8e8e93',
+    'stroke-width': 1.2,
+    zIndex: 8
+  }
+
+  pairGroups.forEach((pairGroup) => {
+    const rowCenters = pairGroup.rows.map(row => yAxis.toPixels(row, false))
+    const topY = Math.min(...rowCenters)
+    const bottomY = Math.max(...rowCenters)
+    const centerY = (topY + bottomY) / 2
+
+    renderer
+      .text(pairGroup.pair, labelX, centerY + 4)
+      .attr({
+        align: 'right',
+        title: pairGroup.pair,
+        zIndex: 9
+      })
+      .css({
+        color: '#1d1d1f',
+        fontSize: '11px',
+        fontWeight: '600'
+      })
+      .add(group)
+
+    renderer
+      .path([
+        ['M', connectorStartX, centerY],
+        ['L', bracketX, centerY]
+      ])
+      .attr(lineAttrs)
+      .add(group)
+
+    if (rowCenters.length > 1) {
+      renderer
+        .path([
+          ['M', bracketX, topY],
+          ['L', bracketX, bottomY]
+        ])
+        .attr(lineAttrs)
+        .add(group)
+    }
+
+    rowCenters.forEach((rowY) => {
+      renderer
+        .path([
+          ['M', bracketX, rowY],
+          ['L', rowEndX, rowY]
+        ])
+        .attr(lineAttrs)
+        .add(group)
+    })
+  })
+}
+
 const updateThreshold = (event) => {
   chartUiStore.setTypeConservationThreshold(parseFloat(event.target.value))
   updateChart()
@@ -573,11 +668,10 @@ const updateChart = async () => {
     })
   })
 
-  // Create labels for Y-axis: just the pair
-  const pairTypeLabels = pairTypeCombinations.map(pt => pt.pair)
+  const pairGroups = buildPairGroups(pairTypeCombinations)
   
   // Count unique pairs for the chart title
-  const uniquePairCount = new Set(pairTypeCombinations.map(pt => pt.pair)).size
+  const uniquePairCount = pairGroups.length
   
 
   // Create separate heatmap series for each interaction type (like TimePairMatrix)
@@ -742,8 +836,13 @@ const updateChart = async () => {
       type: 'heatmap',
       backgroundColor: 'transparent',
       height: Math.max(600, pairTypeCombinations.length * 25 + 200),
-      marginLeft: 250,
-      marginRight: 200
+      marginLeft: 320,
+      marginRight: 200,
+      events: {
+        render: function() {
+          drawPairHierarchyLabels(this, pairGroups)
+        }
+      }
     },
     title: {
       text: `${systemsStore.currentSystem?.name || 'System'} - Interaction Conservation Timeline (${pairTypeCombinations.length} pair-type combinations, ${uniquePairCount} unique pairs)`,
@@ -808,23 +907,8 @@ const updateChart = async () => {
       max: pairTypeCombinations.length - 0.5,
       tickPositions: Array.from({ length: pairTypeCombinations.length }, (_, i) => i),
       labels: {
-        align: 'right',
-        x: -10,
-        useHTML: true,
-        style: {
-          fontSize: '12px',
-          fontWeight: '600',
-          color: '#1d1d1f',
-          textAlign: 'right',
-          width: '220px',
-          whiteSpace: 'nowrap',
-          overflow: 'visible'
-        },
         formatter: function() {
-          const rawIndex = Math.round(this.value)
-          const index = Math.max(0, Math.min(pairTypeCombinations.length - 1, rawIndex))
-          const label = pairTypeLabels[index]
-          return label ? `<div style="padding: 4px 0; width: 220px; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}</div>` : ''
+          return ''
         }
       },
       gridLineWidth: 0,
@@ -1100,7 +1184,7 @@ const loadDistanceData = async () => {
   if (!systemsStore.currentSystem) return
   
   try {
-    const response = await api.getInteractionDistances(systemsStore.currentSystem.id)
+    const response = await api.getInteractionDistances(systemsStore.currentSystem)
     distanceData.value = response
   } catch (error) {
     console.error('Error loading distance data:', error)
@@ -1134,7 +1218,7 @@ const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
       chain2: res2.chain
     }
     
-    const response = await api.getAtomPairs(systemsStore.currentSystem.id, params)
+    const response = await api.getAtomPairs(systemsStore.currentSystem, params)
     atomPairDataByPair.value.set(pairKey, response)
     return response
   } catch (error) {
@@ -1182,7 +1266,7 @@ const loadAtomPairDataForAllPairs = async () => {
   
   try {
     // Make a single batch API call
-    const batchResult = await api.getAtomPairsBatch(systemsStore.currentSystem.id, pairsToLoad)
+    const batchResult = await api.getAtomPairsBatch(systemsStore.currentSystem, pairsToLoad)
     
     // Store results in the cache, mapping the returned keys to our expected keys
     pairsToLoad.forEach(pair => {
@@ -1706,4 +1790,3 @@ input[type="range"]::-moz-range-thumb:hover {
 }
 
 </style>
-
