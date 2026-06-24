@@ -11,6 +11,7 @@ export const useAnalysisStore = defineStore('analysis', {
   state: () => ({
     interactions: [],
     areaData: [],
+    areaSeries: [],
     trends: {},
     trendFrameNumbers: [],
     conservedIslands: [],
@@ -66,8 +67,10 @@ export const useAnalysisStore = defineStore('analysis', {
       try {
         const data = await api.getAreaData(systemId)
         this.areaData = data.frames || []
+        this.areaSeries = data.series || []
       } catch (error) {
         this.errors.area = error.message
+        this.areaSeries = []
         console.error('Error loading area data:', error)
       } finally {
         this.loading.area = false

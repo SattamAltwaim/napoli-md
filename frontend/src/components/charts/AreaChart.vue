@@ -40,11 +40,21 @@ const chartContainer = ref(null)
 let chart = null
 let hasAnimated = false
 
-const PERCENT_FIELD_MAP = {
-  'Total BSA': 'totalPercent',
-  'Total POLAR Buried Area': 'polarPercent',
-  'Total NON POLAR Buried Area': 'nonPolarPercent'
-}
+const DEFAULT_AREA_SERIES = [
+  {
+    key: 'totalBSA',
+    label: 'Total BSA',
+    unit: 'Å²',
+    kind: 'absolute',
+    color: '#3B6EF5',
+    dashStyle: 'Solid',
+    symbol: 'circle',
+    percentKey: 'totalPercent'
+  }
+]
+
+const fallbackColors = ['#3B6EF5', '#FF3B30', '#34C759', '#FF9500', '#5856D6', '#30B0C7']
+const fallbackSymbols = ['circle', 'square', 'triangle', 'diamond']
 
 const calculateStats = (data) => {
   if (!data.length) {
@@ -74,19 +84,30 @@ const updateChart = () => {
   }
 
   const sortedAreaData = [...analysisStore.areaData].sort((a, b) => a.frame - b.frame) //prevents lexicographic order
-
+  const availableSeries = (analysisStore.areaSeries?.length ? analysisStore.areaSeries : DEFAULT_AREA_SERIES)
+    .filter(series => sortedAreaData.some(frame => frame[series.key] !== undefined && frame[series.key] !== null))
+  const selectedKind = showPercentages.value ? 'percent' : 'absolute'
+  const plottedSeries = availableSeries.filter(series => series.kind === selectedKind)
+  const seriesDefinitions = plottedSeries.length ? plottedSeries : availableSeries
+  const distinctUnits = [...new Set(seriesDefinitions.map(series => series.unit).filter(Boolean))]
+  const yUnit = distinctUnits.length === 1 ? distinctUnits[0] : (showPercentages.value ? '%' : 'Å²')
   const categories = sortedAreaData.map(d => `${d.frame}`)
-  const totalBSAData = sortedAreaData.map(d => d.totalBSA)
-  const polarBSAData = sortedAreaData.map(d => d.polarBSA)
-  const nonPolarBSAData = sortedAreaData.map(d => d.nonPolarBSA)
 
   if (chart) {
     chart.destroy()
   }
 
-  const totalStats = calculateStats(totalBSAData)
-  const polarStats = calculateStats(polarBSAData)
-  const nonPolarStats = calculateStats(nonPolarBSAData)
+  const seriesStats = new Map()
+  const seriesData = new Map()
+  seriesDefinitions.forEach(series => {
+    const values = sortedAreaData.map(frame => {
+      const value = Number(frame[series.key])
+      return Number.isFinite(value) ? value : null
+    })
+    const numericValues = values.filter(value => value !== null)
+    seriesData.set(series.key, values)
+    seriesStats.set(series.key, calculateStats(numericValues))
+  })
 
   const buildLegendName = (baseName, color, stats) => {
     if (!showStats.value) return baseName
@@ -119,7 +140,7 @@ const updateChart = () => {
       height: 650
     },
     title: {
-      text: `${systemsStore.currentSystem?.name || 'System'} - Total Buried Surface Area Across Frames`,
+      text: `${systemsStore.currentSystem?.name || 'System'} - Surface Area Across Frames`,
       style: {
         fontSize: '24px',
         fontWeight: '600',
@@ -152,7 +173,7 @@ const updateChart = () => {
     },
     yAxis: {
       title: {
-        text: 'Total Buried Surface Area (Å²)',
+        text: showPercentages.value ? 'Surface Area (%)' : 'Surface Area (Å²)',
         style: {
           fontSize: '15px',
           fontWeight: '600',
@@ -168,14 +189,21 @@ const updateChart = () => {
       }
     },
     legend: {
-      align: 'center',
-      verticalAlign: 'top',
-      layout: 'horizontal',
+      align: 'right',
+      verticalAlign: 'middle',
+      layout: 'vertical',
+      width: 260,
+      x: -8,
+      y: 0,
+      itemDistance: 12,
+      itemMarginTop: 6,
+      itemMarginBottom: 6,
       useHTML: true,
       itemStyle: {
-        fontSize: '14px',
+        fontSize: '12px',
         fontWeight: '500',
-        color: '#1d1d1f'
+        color: '#1d1d1f',
+        lineHeight: '16px'
       }
     },
     plotOptions: {
@@ -195,42 +223,32 @@ const updateChart = () => {
         }
       }
     },
-    series: [{
-      id: 'total-bsa-line',
-      name: buildLegendName('Total BSA', '#3B6EF5', totalStats),
-      data: totalBSAData,
-      color: '#3B6EF5',
-      dashStyle: 'Solid',
-      zIndex: 2,
-      marker: {
-        symbol: 'circle'
+    series: seriesDefinitions.map((series, index) => {
+      const color = series.color || fallbackColors[index % fallbackColors.length]
+      const stats = seriesStats.get(series.key)
+      return {
+        id: `${series.key}-line`,
+        name: buildLegendName(`${series.label} (${series.unit || yUnit})`, color, stats),
+        data: seriesData.get(series.key),
+        color,
+        dashStyle: series.dashStyle || 'Solid',
+        zIndex: 2,
+        marker: {
+          symbol: series.symbol || fallbackSymbols[index % fallbackSymbols.length]
+        },
+        custom: series
       }
-    }, {
-      id: 'polar-bsa-line',
-      name: buildLegendName('Total POLAR Buried Area', '#FF3B30', polarStats),
-      data: polarBSAData,
-      color: '#FF3B30',
-      dashStyle: 'Dash',
-      zIndex: 2,
-      marker: {
-        symbol: 'square'
-      }
-    }, {
-      id: 'nonpolar-bsa-line',
-      name: buildLegendName('Total NON POLAR Buried Area', '#34C759', nonPolarStats),
-      data: nonPolarBSAData,
-      color: '#34C759',
-      dashStyle: 'Dot',
-      zIndex: 2,
-      marker: {
-        symbol: 'triangle'
-      }
-    }].concat(
+    }).concat(
       showStats.value
-        ? [buildRangeSeries('total-bsa-line', '#3B6EF5', totalStats, totalBSAData),
-           buildRangeSeries('polar-bsa-line', '#FF3B30', polarStats, polarBSAData),
-           buildRangeSeries('nonpolar-bsa-line', '#34C759', nonPolarStats, nonPolarBSAData)
-          ].filter(Boolean)
+        ? seriesDefinitions.map((series, index) => {
+          const color = series.color || fallbackColors[index % fallbackColors.length]
+          return buildRangeSeries(
+            `${series.key}-line`,
+            color,
+            seriesStats.get(series.key),
+            seriesData.get(series.key)
+          )
+        }).filter(Boolean)
         : []
     ),
     tooltip: {
@@ -248,18 +266,23 @@ const updateChart = () => {
         sortedPoints.forEach(point => {
           const frameIndex = point.point?.index ?? 0
           const frameData = sortedAreaData[frameIndex]
-          const baseName = point.series.name.replace(/<span[\s\S]*$/, '').trim()
-          const percentField = PERCENT_FIELD_MAP[baseName]
-          const percentValue = showPercentages.value && frameData && percentField ? frameData[percentField] : null
-          const percentText = percentValue !== null && percentValue !== undefined
+          const seriesMeta = point.series.userOptions.custom || {}
+          const unit = seriesMeta.unit || yUnit
+          const valueText = point.y === null || point.y === undefined
+            ? 'n/a'
+            : `${point.y.toFixed(2)} ${unit}`
+          const percentValue = !showPercentages.value && frameData && seriesMeta.percentKey
+            ? Number(frameData[seriesMeta.percentKey])
+            : null
+          const percentText = percentValue !== null && percentValue !== undefined && Number.isFinite(percentValue)
             ? ` (${percentValue.toFixed(2)}%)`
             : ''
 
           html += `
             <div style="margin-bottom: 4px;">
               <span style="color: ${point.color}; font-weight: 600;">●</span>
-              <span style="color: #1d1d1f;">${point.series.name}: </span>
-              <span style="color: #1d1d1f; font-weight: 600;">${point.y.toFixed(2)} Å²${percentText}</span>
+              <span style="color: #1d1d1f;">${seriesMeta.label || point.series.name}: </span>
+              <span style="color: #1d1d1f; font-weight: 600;">${valueText}${percentText}</span>
             </div>
           `
         })
@@ -282,6 +305,7 @@ onMounted(() => {
 watch([
   () => chartUiStore.currentChartType,
   () => analysisStore.areaData.length,
+  () => analysisStore.areaSeries.length,
   () => showStats.value,
   () => showPercentages.value,
   () => chartUiStore.timeUnit
@@ -372,4 +396,3 @@ input:checked + .slider:before {
   height: calc(100% - 40px);
 }
 </style>
-

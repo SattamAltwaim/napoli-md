@@ -63,6 +63,90 @@ DETAIL_FILE_TYPES = [
     ("_Water_Mediated.csv", "Water mediated"),
 ]
 
+AREA_LIGAND_PROPERTIES = {
+    "Bound-Ligand Accessible Surface Area (ASA) (Å²)": "boundLigandASA",
+    "Unbound-Ligand Accessible Surface Area (ASA) (Å²)": "unboundLigandASA",
+    "Ligand Buried Surface Area (BSA) (Å²)": "ligandBSA",
+    "Ligand Buried Surface Area (BSA) (%)": "ligandBSAPercent",
+}
+
+AREA_SERIES = [
+    {
+        "key": "boundLigandASA",
+        "label": "Bound-Ligand ASA",
+        "unit": "Å²",
+        "kind": "absolute",
+        "color": "#3B6EF5",
+        "dashStyle": "Solid",
+        "symbol": "circle",
+    },
+    {
+        "key": "unboundLigandASA",
+        "label": "Unbound-Ligand ASA",
+        "unit": "Å²",
+        "kind": "absolute",
+        "color": "#5856D6",
+        "dashStyle": "ShortDash",
+        "symbol": "diamond",
+    },
+    {
+        "key": "ligandBSA",
+        "label": "Ligand BSA",
+        "unit": "Å²",
+        "kind": "absolute",
+        "color": "#FF9500",
+        "dashStyle": "Solid",
+        "symbol": "triangle",
+        "percentKey": "ligandBSAPercent",
+    },
+    {
+        "key": "proteinBoundASA",
+        "label": "NA/Protein Bound ASA",
+        "unit": "Å²",
+        "kind": "absolute",
+        "color": "#34C759",
+        "dashStyle": "Dash",
+        "symbol": "square",
+    },
+    {
+        "key": "proteinUnboundASA",
+        "label": "NA/Protein Unbound ASA",
+        "unit": "Å²",
+        "kind": "absolute",
+        "color": "#30B0C7",
+        "dashStyle": "ShortDot",
+        "symbol": "circle",
+    },
+    {
+        "key": "proteinBSA",
+        "label": "NA/Protein Residue BSA",
+        "unit": "Å²",
+        "kind": "absolute",
+        "color": "#FF3B30",
+        "dashStyle": "Dot",
+        "symbol": "square",
+        "percentKey": "proteinBSAPercent",
+    },
+    {
+        "key": "ligandBSAPercent",
+        "label": "Ligand BSA",
+        "unit": "%",
+        "kind": "percent",
+        "color": "#FF9500",
+        "dashStyle": "Solid",
+        "symbol": "triangle",
+    },
+    {
+        "key": "proteinBSAPercent",
+        "label": "NA/Protein Residue BSA",
+        "unit": "%",
+        "kind": "percent",
+        "color": "#FF3B30",
+        "dashStyle": "Dot",
+        "symbol": "square",
+    },
+]
+
 NUMBER_RE = re.compile(r"-?\d+(?:\.\d+)?")
 
 
@@ -166,6 +250,39 @@ def distance_from_row(row):
     if not distances:
         return None
     return sum(distances) / len(distances)
+
+
+def read_ligand_area_file(path: Path):
+    values = {}
+    for row in read_csv(path):
+        key = AREA_LIGAND_PROPERTIES.get(str(row.get("Property", "")).strip())
+        if key:
+            values[key] = parse_number(row.get("Value"))
+    return values
+
+
+def read_residue_area_file(path: Path):
+    totals = defaultdict(float)
+    count = 0
+
+    for row in read_csv(path):
+        count += 1
+        totals["proteinBoundASA"] += parse_number(row.get("ASA of NA/Protein Res - BOUND (Å²)"))
+        totals["proteinUnboundASA"] += parse_number(row.get("ASA of NA/Protein Res - UNBOUND (Å²)"))
+        totals["proteinBSA"] += parse_number(row.get("BSA of NA/Protein Res (Å²)"))
+
+    if totals["proteinUnboundASA"]:
+        totals["proteinBSAPercent"] = (totals["proteinBSA"] / totals["proteinUnboundASA"]) * 100
+
+    return {**totals, "residueCount": count}
+
+
+def available_area_series(frames):
+    return [
+        series
+        for series in AREA_SERIES
+        if any(frame.get(series["key"]) is not None for frame in frames)
+    ]
 
 
 def detail_type_for_file(path: Path):
@@ -411,19 +528,36 @@ class TrajectoryDataset:
     def area(self, system_id):
         self.validate_system(system_id)
         frames = []
-        for row in self.summary_rows():
-            frames.append(
-                {
-                    "frame": parse_int(row.get("frame")),
-                    "totalBSA": parse_number(row.get("ligand_bsa_a2")),
-                    "polarBSA": 0,
-                    "nonPolarBSA": 0,
-                    "totalPercent": parse_number(row.get("ligand_bsa_pct")),
-                    "polarPercent": 0,
-                    "nonPolarPercent": 0,
-                }
-            )
-        return {"system": system_id, "frames": frames}
+
+        for frame_dir in self.frame_dirs():
+            frame = frame_number_from_dir(frame_dir)
+            frame_data = {"frame": frame}
+
+            for path in sorted(frame_dir.glob("*asa_stats_ligand.csv")):
+                frame_data.update(read_ligand_area_file(path))
+
+            for path in sorted(frame_dir.glob("*asa_stats_per_res.csv")):
+                frame_data.update(read_residue_area_file(path))
+
+            if len(frame_data) > 1:
+                frame_data["totalBSA"] = frame_data.get("ligandBSA")
+                frame_data["totalPercent"] = frame_data.get("ligandBSAPercent")
+                frames.append(frame_data)
+
+        if not frames:
+            for row in self.summary_rows():
+                frames.append(
+                    {
+                        "frame": parse_int(row.get("frame")),
+                        "ligandBSA": parse_number(row.get("ligand_bsa_a2")),
+                        "ligandBSAPercent": parse_number(row.get("ligand_bsa_pct")),
+                        "totalBSA": parse_number(row.get("ligand_bsa_a2")),
+                        "totalPercent": parse_number(row.get("ligand_bsa_pct")),
+                    }
+                )
+
+        frames.sort(key=lambda item: item["frame"])
+        return {"system": system_id, "frames": frames, "series": available_area_series(frames)}
 
     def trends(self, system_id):
         self.validate_system(system_id)
