@@ -1,0 +1,21 @@
+,NA/Protein Res Name,NA/Protein Res Number,NA/Protein Chain,Ligand Res Name,Ligand Res Number,Ligand Chain,Type of Interactions
+0,A,2469,a,6UQ,3003,a,; H-bond; H-bond*; CH-O/N bond; CH-O/N bond; Polar vdW contact; Polar vdW contact; Polar vdW contact; Polar vdW contact
+1,G,2470,a,6UQ,3003,a,; H-bond*; H-bond*; CH-O/N bond; CH-O/N bond; CH-O/N bond; Polar vdW contact; Polar vdW contact
+2,A,2471,a,6UQ,3003,a,; H-bond*; H-bond*; CH-O/N bond; CH-O/N bond; CH-O/N bond; CH-O/N bond; Polar vdW contact; Polar vdW contact; Polar vdW contact; Polar vdW contact; Polar vdW contact
+3,G,2472,a,6UQ,3003,a,; CH-O/N bond
+4,A,2478,a,6UQ,3003,a,; Polar vdW contact; Polar vdW contact*
+5,U,2479,a,6UQ,3003,a,; CH-O/N bond; CH-O/N bond; CH-O/N bond; CH-O/N bond; CH-O/N bond; CH-O/N bond; CH-O/N bond; CH-O/N bond; Polar vdW contact
+6,C,2480,a,6UQ,3003,a,; H-bond; H-bond*; H-bond; CH-O/N bond; CH-O/N bond; CH-O/N bond; CH-O/N bond; Polar vdW contact; Polar vdW contact; Polar vdW contact; Polar vdW contact; Polar vdW contact
+7,G,2481,a,6UQ,3003,a,Proximal contact
+8,A,2482,a,6UQ,3003,a,Proximal contact
+9,G,2529,a,6UQ,3003,a,; CH-O/N bond; Polar vdW contact; Polar vdW contact*
+10,A,2530,a,6UQ,3003,a,; CH-O/N bond*
+11,A,2534,a,6UQ,3003,a,Proximal contact
+12,G,2535,a,6UQ,3003,a,; H-bond*; H-bond; H-bond*; H-bond*; CH-O/N bond; CH-O/N bond; Polar vdW contact*; Polar vdW contact; Polar vdW contact*; Polar vdW contact; Polar vdW contact*; Polar vdW contact; Polar vdW contact; Polar vdW contact*
+13,G,2536,a,6UQ,3003,a,; H-bond; CH-O/N bond; CH-O/N bond; CH-O/N bond
+14,GLU,47,l,6UQ,3003,a,Proximal contact
+15,ARG,50,l,6UQ,3003,a,; H-bond*; Polar vdW contact; Polar vdW contact
+16,ARG,51,l,6UQ,3003,a,; CH-O/N bond; Polar vdW contact; CH- π Interaction
+17,THR,54,l,6UQ,3003,a,; Polar vdW contact; Polar vdW contact
+18,ARG,55,l,6UQ,3003,a,; H-bond*; Polar vdW contact
+19,ARG,59,l,6UQ,3003,a,; H-bond*; Polar vdW contact; Polar vdW contact

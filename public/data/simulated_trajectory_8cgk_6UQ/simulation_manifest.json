@@ -1,0 +1,172 @@
+{
+  "source": {
+    "job_json": "napoli_job_1687.json",
+    "napoli_job_id": 1687,
+    "pdb": "8cgk",
+    "ligand": "6UQ-3003",
+    "ligand_chain": "a",
+    "interacting_chains": "a l"
+  },
+  "simulation": {
+    "seed": 60423003,
+    "frames": 10,
+    "model": "deterministic correlated perturbation of NAPOLI atom-pair records; no new atom pairs invented",
+    "thresholds_angstrom": {
+      "H-bond": 3.9,
+      "CH-O/N bond": 4.0,
+      "Polar vdW contact": 3.95,
+      "Proximal contact": 5.0,
+      "CH- \u03c0 Interaction": 4.4
+    },
+    "star_cutoffs_angstrom": {
+      "H-bond": 3.05,
+      "CH-O/N bond": 3.28,
+      "Polar vdW contact": 3.25
+    },
+    "asa_model": "ligand and residue BSA rescaled from active weighted contact scores plus small correlated breathing",
+    "intended_use": "synthetic trajectory-like NAPOLI output for software development and visualization testing",
+    "not_intended_use": "physical molecular dynamics inference or binding-energy estimation"
+  },
+  "frame_summaries": [
+    {
+      "frame": 1,
+      "total_specific_interactions": 98,
+      "h_bond": 7,
+      "h_bond_star": 12,
+      "ch_o_n": 34,
+      "ch_o_n_star": 1,
+      "polar_vdw": 35,
+      "polar_vdw_star": 8,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "775.7",
+      "ligand_bsa_pct": "46.61"
+    },
+    {
+      "frame": 2,
+      "total_specific_interactions": 81,
+      "h_bond": 7,
+      "h_bond_star": 10,
+      "ch_o_n": 24,
+      "ch_o_n_star": 4,
+      "polar_vdw": 32,
+      "polar_vdw_star": 3,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "792.94",
+      "ligand_bsa_pct": "47.65"
+    },
+    {
+      "frame": 3,
+      "total_specific_interactions": 83,
+      "h_bond": 7,
+      "h_bond_star": 10,
+      "ch_o_n": 24,
+      "ch_o_n_star": 3,
+      "polar_vdw": 33,
+      "polar_vdw_star": 5,
+      "ch_pi": 1,
+      "proximal_only": 5,
+      "ligand_bsa_a2": "792.5",
+      "ligand_bsa_pct": "47.62"
+    },
+    {
+      "frame": 4,
+      "total_specific_interactions": 85,
+      "h_bond": 5,
+      "h_bond_star": 12,
+      "ch_o_n": 29,
+      "ch_o_n_star": 1,
+      "polar_vdw": 31,
+      "polar_vdw_star": 6,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "786.82",
+      "ligand_bsa_pct": "47.28"
+    },
+    {
+      "frame": 5,
+      "total_specific_interactions": 88,
+      "h_bond": 7,
+      "h_bond_star": 11,
+      "ch_o_n": 29,
+      "ch_o_n_star": 1,
+      "polar_vdw": 30,
+      "polar_vdw_star": 9,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "778.37",
+      "ligand_bsa_pct": "46.77"
+    },
+    {
+      "frame": 6,
+      "total_specific_interactions": 90,
+      "h_bond": 7,
+      "h_bond_star": 11,
+      "ch_o_n": 30,
+      "ch_o_n_star": 0,
+      "polar_vdw": 32,
+      "polar_vdw_star": 9,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "770.85",
+      "ligand_bsa_pct": "46.32"
+    },
+    {
+      "frame": 7,
+      "total_specific_interactions": 98,
+      "h_bond": 7,
+      "h_bond_star": 12,
+      "ch_o_n": 32,
+      "ch_o_n_star": 3,
+      "polar_vdw": 32,
+      "polar_vdw_star": 11,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "771.52",
+      "ligand_bsa_pct": "46.36"
+    },
+    {
+      "frame": 8,
+      "total_specific_interactions": 98,
+      "h_bond": 6,
+      "h_bond_star": 13,
+      "ch_o_n": 28,
+      "ch_o_n_star": 7,
+      "polar_vdw": 32,
+      "polar_vdw_star": 11,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "775.84",
+      "ligand_bsa_pct": "46.62"
+    },
+    {
+      "frame": 9,
+      "total_specific_interactions": 95,
+      "h_bond": 5,
+      "h_bond_star": 12,
+      "ch_o_n": 30,
+      "ch_o_n_star": 4,
+      "polar_vdw": 34,
+      "polar_vdw_star": 9,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "782.43",
+      "ligand_bsa_pct": "47.02"
+    },
+    {
+      "frame": 10,
+      "total_specific_interactions": 90,
+      "h_bond": 9,
+      "h_bond_star": 9,
+      "ch_o_n": 30,
+      "ch_o_n_star": 2,
+      "polar_vdw": 35,
+      "polar_vdw_star": 4,
+      "ch_pi": 1,
+      "proximal_only": 4,
+      "ligand_bsa_a2": "790.09",
+      "ligand_bsa_pct": "47.48"
+    }
+  ]
+}
