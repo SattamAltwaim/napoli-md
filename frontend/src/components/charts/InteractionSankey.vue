@@ -24,8 +24,6 @@ const chartContainer = ref(null)
 let chart = null
 const hiddenLegendTypes = new Set()
 
-const typeNodeId = (type) => `type:${type}`
-
 const updateChart = () => {
   if (!chartContainer.value) return
 
@@ -56,7 +54,6 @@ const updateChart = () => {
       const persistence = row.typePersistence?.[type] ?? row.consistency ?? 0
       if (persistence <= 0) continue
 
-      const typeId = typeNodeId(type)
       const color = getInteractionBaseColor(type)
       const colorArray = getInteractionColorArray(type)
       const linkColor = `rgba(${colorArray[0]}, ${colorArray[1]}, ${colorArray[2]}, 0.48)`
@@ -77,20 +74,12 @@ const updateChart = () => {
       nodes.set(target, {
         id: target,
         name: target,
-        column: 2,
+        column: 1,
         color: '#8E8E93',
         custom: { role: `Chain ${row.chain2} residue` }
       })
-      nodes.set(typeId, {
-        id: typeId,
-        name: type,
-        column: 1,
-        color,
-        custom: { role: 'Interaction type' }
-      })
 
-      links.push({ from: source, to: typeId, weight, color: linkColor, custom })
-      links.push({ from: typeId, to: target, weight, color: linkColor, custom })
+      links.push({ from: source, to: target, weight, color: linkColor, custom })
     }
   }
 
@@ -113,7 +102,7 @@ const updateChart = () => {
       style: { fontSize: '24px', fontWeight: '600', color: '#1d1d1f' }
     },
     subtitle: {
-      text: 'Flow: chain A residue → interaction type → chain B residue | Link width = type conservation %',
+      text: 'Flow: chain A residue → chain B residue | Color = interaction type | Link width = type conservation %',
       style: { fontSize: '14px', color: '#6e6e73' }
     },
     credits: { enabled: false },
@@ -152,7 +141,7 @@ const updateChart = () => {
         nodeWidth: 24,
         nodePadding: 16,
         borderWidth: 0,
-        curveFactor: 0.45,
+        curveFactor: 0,
         linkOpacity: 0.7,
         minLinkWidth: 3,
         dataLabels: {
