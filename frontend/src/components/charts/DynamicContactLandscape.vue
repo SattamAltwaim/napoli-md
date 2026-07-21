@@ -8,11 +8,14 @@
 import { ref, onMounted, watch } from 'vue'
 import Highcharts from '../../utils/highchartsConfig'
 import { withExporting } from '../../utils/highchartsConfig'
+import HighchartsMore from 'highcharts/highcharts-more'
 import { useAnalysisStore } from '../../stores/analysisStore'
 import { useChartUiStore } from '../../stores/chartUiStore'
 import { useSystemsStore } from '../../stores/systemsStore'
 import { formatResiduePairFromIds, getInteractionBaseColor, matchesSelectedTypes } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
+
+HighchartsMore(Highcharts)
 
 const analysisStore = useAnalysisStore()
 const chartUiStore = useChartUiStore()
@@ -20,7 +23,19 @@ const systemsStore = useSystemsStore()
 const chartContainer = ref(null)
 let chart = null
 
-const markerRadius = (typePersistence) => 7 + Math.sqrt(typePersistence) * 13
+const chooseChangingResidueSide = (interactions) => {
+  const ids1 = new Set(interactions.map(interaction => interaction.id1).filter(Boolean))
+  const ids2 = new Set(interactions.map(interaction => interaction.id2).filter(Boolean))
+  return ids1.size >= ids2.size ? 'id1' : 'id2'
+}
+
+const getBubbleSizing = (pointCount) => {
+  if (pointCount > 90) return { minSize: 4, maxSize: 14, labelFontSize: '7px' }
+  if (pointCount > 60) return { minSize: 5, maxSize: 16, labelFontSize: '7px' }
+  if (pointCount > 35) return { minSize: 6, maxSize: 20, labelFontSize: '8px' }
+  if (pointCount > 20) return { minSize: 7, maxSize: 24, labelFontSize: '8px' }
+  return { minSize: 8, maxSize: 30, labelFontSize: '9px' }
+}
 
 const spreadOverlappingPoints = (points) => {
   const groups = new Map()
@@ -69,12 +84,6 @@ const spreadOverlappingPoints = (points) => {
     })
   }
 
-  for (const point of points) {
-    point.dataLabels = {
-      y: point.y >= 92 ? point.marker.radius + 18 : -(point.marker.radius + 8)
-    }
-  }
-
 }
 
 const buildFrameTimeline = (frames, totalFrames) => {
@@ -112,6 +121,7 @@ const updateChart = () => {
   }
 
   const points = []
+  const labelSide = chooseChangingResidueSide(analysisStore.interactions)
   for (const interaction of analysisStore.interactions) {
     const allTypeEntries = (interaction.typesArray || [])
       .map(type => ({
@@ -122,7 +132,7 @@ const updateChart = () => {
     const contactFrames = new Set(allTypeEntries.flatMap(entry => entry.frames))
     const pairPersistence = contactFrames.size / totalFrames
     const pair = formatResiduePairFromIds(interaction.id1, interaction.id2)
-    const residueLabel = interaction.id2 || pair
+    const residueLabel = interaction[labelSide] || interaction.id1 || interaction.id2 || pair
     const selectedEntries = allTypeEntries
       .filter(entry => matchesSelectedTypes(entry.type, selectedTypes, INTERACTION_TYPES))
       .sort((a, b) => b.persistence - a.persistence || a.type.localeCompare(b.type))
@@ -132,10 +142,10 @@ const updateChart = () => {
       points.push({
         x: pairPersistence * 100,
         y: typeExpression * 100,
+        z: entry.persistence * 100,
         name: residueLabel,
         color: getInteractionBaseColor(entry.type),
         marker: {
-          radius: markerRadius(entry.persistence),
           lineWidth: entry.type === 'Clashes' ? 4 : 1.5,
           lineColor: entry.type === 'Clashes' ? '#D32F2F' : '#ffffff'
         },
@@ -150,7 +160,7 @@ const updateChart = () => {
           typeFrameCount: entry.frames.length,
           frames: entry.frames,
           totalFrames,
-          showLabel: index === 0
+          primaryLabel: index === 0
         }
       })
     })
@@ -166,6 +176,15 @@ const updateChart = () => {
   }
 
   spreadOverlappingPoints(points)
+  const bubbleSizing = getBubbleSizing(points.length)
+
+  for (const point of points) {
+    point.labelrank = point.custom.typePersistence * 1000 + point.custom.pairPersistence * 100
+    point.dataLabels = {
+      enabled: true,
+      y: -(Math.round(bubbleSizing.maxSize / 2) + 5)
+    }
+  }
 
   if (chart) chart.destroy()
 
@@ -179,16 +198,21 @@ const updateChart = () => {
   const series = [...seriesByType.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([type, typePoints]) => ({
-      type: 'scatter',
+      type: 'bubble',
       name: type,
       color: getInteractionBaseColor(type),
       data: typePoints,
+      minSize: bubbleSizing.minSize,
+      maxSize: bubbleSizing.maxSize,
+      sizeBy: 'area',
+      zMin: 0,
+      zMax: 100,
       turboThreshold: 10000
     }))
 
   const chartOptions = {
     chart: {
-      type: 'scatter',
+      type: 'bubble',
       backgroundColor: '#ffffff',
       height: 760,
       spacingTop: 35,
@@ -201,7 +225,7 @@ const updateChart = () => {
       style: { fontSize: '24px', fontWeight: '600', color: '#111111' }
     },
     subtitle: {
-      text: 'One bubble per residue–interaction type · Size = persistence across the full trajectory',
+      text: 'One bubble per residue–interaction type · Bubble size = trajectory persistence · Label = changing residue',
       style: { fontSize: '13px', color: '#6e6e73' }
     },
     credits: { enabled: false },
@@ -243,29 +267,38 @@ const updateChart = () => {
       itemStyle: { fontSize: '11px', fontWeight: '600', color: '#111111' }
     },
     plotOptions: {
-      scatter: {
+      bubble: {
         animation: false,
         marker: {
-          symbol: 'circle',
+          fillOpacity: 0.72,
           states: {
             hover: {
               enabled: true,
               lineWidthPlus: 2,
-              radiusPlus: 3
+              radiusPlus: 2
             }
           }
         },
         dataLabels: {
           enabled: true,
-          formatter: function () {
-            return this.point.custom.showLabel ? this.point.name : null
-          },
+          align: 'center',
           allowOverlap: false,
+          backgroundColor: 'rgba(255,255,255,0.82)',
+          borderColor: 'rgba(17,17,17,0.12)',
+          borderRadius: 2,
+          borderWidth: 1,
+          crop: false,
+          overflow: 'allow',
+          padding: 1,
+          useHTML: false,
+          formatter: function () {
+            return this.point.name
+          },
           style: {
-            fontSize: '11px',
-            fontWeight: '700',
+            fontSize: bubbleSizing.labelFontSize,
+            fontWeight: '600',
             color: '#111111',
-            textOutline: '3px #ffffff'
+            textOutline: 'none'
           }
         }
       }
