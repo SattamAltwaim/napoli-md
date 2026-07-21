@@ -8,11 +8,14 @@
 import { ref, onMounted, watch } from 'vue'
 import Highcharts from '../../utils/highchartsConfig'
 import { withExporting } from '../../utils/highchartsConfig'
+import HeatmapModule from 'highcharts/modules/heatmap'
 import { useAnalysisStore } from '../../stores/analysisStore'
 import { useChartUiStore } from '../../stores/chartUiStore'
 import { useSystemsStore } from '../../stores/systemsStore'
 import { formatResiduePairFromIds, matchesSelectedTypes } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
+
+HeatmapModule(Highcharts)
 
 const analysisStore = useAnalysisStore()
 const chartUiStore = useChartUiStore()
@@ -20,14 +23,18 @@ const systemsStore = useSystemsStore()
 const chartContainer = ref(null)
 let chart = null
 
-const markerRadius = (persistence) => 5 + 20 * Math.sqrt(persistence)
+const getMatrixLayout = (rowCount, columnCount, pairLabels) => {
+  const rowHeight = rowCount > 80 ? 24 : rowCount > 40 ? 28 : 34
+  const longestPairLabel = Math.max(...pairLabels.map(label => label.length), 0)
 
-const persistenceColor = (persistence) => {
-  if (persistence >= 0.9) return '#0D47A1'
-  if (persistence >= 0.7) return '#1976D2'
-  if (persistence >= 0.5) return '#42A5F5'
-  if (persistence >= 0.3) return '#90CAF9'
-  return '#BBDEFB'
+  return {
+    chartHeight: Math.max(580, rowCount * rowHeight + 230),
+    marginLeft: Math.min(240, Math.max(150, longestPairLabel * 6.5 + 24)),
+    rowLabelFontSize: rowCount > 80 ? '8px' : rowCount > 40 ? '9px' : '11px',
+    cellLabelFontSize: rowCount > 80 ? '8px' : rowCount > 40 ? '9px' : '11px',
+    columnLabelFontSize: columnCount > 10 ? '9px' : '11px',
+    columnLabelRotation: columnCount > 6 ? -35 : 0
+  }
 }
 
 const buildFrameTimeline = (frames, totalFrames) => {
@@ -106,20 +113,21 @@ const updateChart = () => {
   sortedInteractions.forEach((interaction, y) => {
     types.forEach((type, x) => {
       const persistence = interaction.typePersistence?.[type]
-      if (persistence === undefined || persistence === null) return
+      const isObserved = Number.isFinite(persistence)
 
       data.push({
         x,
         y,
-        color: persistenceColor(persistence),
-        marker: {
-          radius: markerRadius(persistence)
+        value: isObserved ? persistence : null,
+        dataLabels: {
+          enabled: isObserved,
+          color: isObserved && persistence >= 0.58 ? '#ffffff' : '#111111'
         },
         custom: {
           pair: pairLabels[y],
           type,
-          persistence,
-          frameCount: Math.round(persistence * systemsStore.totalFrames),
+          persistence: isObserved ? persistence : null,
+          frameCount: isObserved ? Math.round(persistence * systemsStore.totalFrames) : 0,
           frames: interaction.typeFrames?.[type] || [],
           totalFrames: systemsStore.totalFrames,
           isOverall: false
@@ -130,10 +138,9 @@ const updateChart = () => {
     overallData.push({
       x: types.length,
       y,
-      color: persistenceColor(interaction.consistency),
-      marker: {
-        radius: markerRadius(interaction.consistency),
-        symbol: 'diamond'
+      value: interaction.consistency,
+      dataLabels: {
+        color: interaction.consistency >= 0.58 ? '#ffffff' : '#111111'
       },
       custom: {
         pair: pairLabels[y],
@@ -149,16 +156,19 @@ const updateChart = () => {
 
   if (chart) chart.destroy()
 
-  const dynamicHeight = Math.max(580, pairLabels.length * 46 + 250)
+  const layout = getMatrixLayout(pairLabels.length, categories.length, pairLabels)
+  const xTickPositions = categories.map((_, index) => index)
+  const yTickPositions = pairLabels.map((_, index) => index)
   const systemName = systemsStore.currentSystem?.name || 'System'
   const chartOptions = {
     chart: {
-      type: 'scatter',
+      type: 'heatmap',
       backgroundColor: '#ffffff',
-      height: dynamicHeight,
-      marginLeft: 190,
-      spacingTop: 30,
-      spacingBottom: 25
+      height: layout.chartHeight,
+      marginLeft: layout.marginLeft,
+      spacingTop: 24,
+      spacingRight: 36,
+      spacingBottom: 18
     },
     title: {
       text: `${systemName} — Interaction Type Persistence Matrix`,
@@ -171,15 +181,23 @@ const updateChart = () => {
       opposite: true,
       min: -0.5,
       max: categories.length - 0.5,
-      tickmarkPlacement: 'between',
-      gridLineWidth: 1,
-      gridLineColor: '#d9d9d9',
-      lineColor: '#111111',
-      tickColor: '#111111',
+      startOnTick: false,
+      endOnTick: false,
+      tickPositions: xTickPositions,
+      gridLineWidth: 0,
+      lineWidth: 0,
+      tickLength: 0,
       title: { text: null },
       labels: {
-        rotation: -35,
-        style: { fontSize: '11px', fontWeight: '600', color: '#111111' }
+        rotation: layout.columnLabelRotation,
+        formatter: function () {
+          return categories[this.pos] ?? ''
+        },
+        style: {
+          fontSize: layout.columnLabelFontSize,
+          fontWeight: '600',
+          color: '#111111'
+        }
       },
       plotLines: [{
         value: types.length - 0.5,
@@ -198,31 +216,70 @@ const updateChart = () => {
       reversed: true,
       min: -0.5,
       max: pairLabels.length - 0.5,
-      tickmarkPlacement: 'between',
-      gridLineWidth: 1,
-      gridLineColor: '#d9d9d9',
-      lineWidth: 1,
-      lineColor: '#111111',
-      tickWidth: 1,
-      tickColor: '#111111',
+      startOnTick: false,
+      endOnTick: false,
+      tickPositions: yTickPositions,
+      gridLineWidth: 0,
+      lineWidth: 0,
+      tickLength: 0,
       title: { text: null },
       labels: {
-        style: { fontSize: '11px', fontWeight: '600', color: '#111111' }
+        formatter: function () {
+          return pairLabels[this.pos] ?? ''
+        },
+        style: {
+          fontSize: layout.rowLabelFontSize,
+          fontWeight: '600',
+          color: '#111111'
+        }
       }
     },
-    legend: { enabled: false },
+    colorAxis: {
+      min: 0,
+      max: 1,
+      startOnTick: false,
+      endOnTick: false,
+      tickPositions: [0, 0.25, 0.5, 0.75, 1],
+      stops: [
+        [0, '#E3F2FD'],
+        [0.3, '#90CAF9'],
+        [0.5, '#42A5F5'],
+        [0.7, '#1976D2'],
+        [1, '#0D47A1']
+      ],
+      labels: {
+        formatter: function () {
+          return `${Math.round(this.value * 100)}%`
+        },
+        style: { fontSize: '11px', color: '#111111' }
+      }
+    },
+    legend: {
+      enabled: true,
+      align: 'center',
+      verticalAlign: 'bottom',
+      layout: 'horizontal',
+      symbolWidth: 260,
+      symbolHeight: 10,
+      margin: 18,
+      padding: 0,
+      title: {
+        text: 'Persistence',
+        style: { fontSize: '12px', fontWeight: '600', color: '#111111' }
+      }
+    },
     plotOptions: {
-      scatter: {
+      heatmap: {
         animation: false,
-        marker: {
-          lineWidth: 1.5,
-          lineColor: '#ffffff',
-          states: {
-            hover: {
-              enabled: true,
-              lineWidth: 2,
-              lineColor: '#111111'
-            }
+        borderWidth: 1,
+        borderColor: '#ffffff',
+        nullColor: '#f1f3f5',
+        pointPadding: 1,
+        states: {
+          hover: {
+            enabled: true,
+            borderColor: '#111111',
+            borderWidth: 1
           }
         },
         dataLabels: {
@@ -231,25 +288,26 @@ const updateChart = () => {
             return `${Math.round(this.point.custom.persistence * 100)}%`
           },
           style: {
-            fontSize: '11px',
+            fontSize: layout.cellLabelFontSize,
             fontWeight: '700',
-            color: '#111111',
-            textOutline: '2px #ffffff'
+            textOutline: 'none'
           }
         }
       }
     },
     series: [
       {
-        type: 'scatter',
+        type: 'heatmap',
         name: 'Interaction type persistence',
         data,
+        showInLegend: false,
         turboThreshold: 10000
       },
       {
-        type: 'scatter',
+        type: 'heatmap',
         name: 'Overall pair conservation',
         data: overallData,
+        showInLegend: false,
         turboThreshold: 10000
       }
     ],
@@ -259,8 +317,11 @@ const updateChart = () => {
       borderWidth: 1,
       borderColor: '#d2d2d7',
       useHTML: true,
+      outside: true,
       formatter: function () {
         const custom = this.point.custom
+        if (!Number.isFinite(custom.persistence)) return false
+
         const percent = Math.round(custom.persistence * 100)
         const timeline = buildFrameTimeline(custom.frames, custom.totalFrames)
         return `<div style="padding:10px;">
