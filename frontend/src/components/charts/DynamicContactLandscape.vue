@@ -228,14 +228,7 @@ const updateChart = () => {
         text: 'Pair Persistence (% of frames)',
         style: { fontSize: '14px', fontWeight: '600', color: '#111111' }
       },
-      labels: { format: '{value}%', style: { color: '#111111' } },
-      plotLines: [{
-        value: PERSISTENCE_SPLIT,
-        width: 2,
-        dashStyle: 'Dash',
-        color: '#6e6e73',
-        zIndex: 4
-      }]
+      labels: { format: '{value}%', style: { color: '#111111' } }
     },
     yAxis: {
       min: 0,
@@ -251,14 +244,7 @@ const updateChart = () => {
         text: 'Interaction Expression (% of pair-contact frames)',
         style: { fontSize: '14px', fontWeight: '600', color: '#111111' }
       },
-      labels: { format: '{value}%', style: { color: '#111111' } },
-      plotLines: [{
-        value: EXPRESSION_SPLIT,
-        width: 2,
-        dashStyle: 'Dash',
-        color: '#6e6e73',
-        zIndex: 4
-      }]
+      labels: { format: '{value}%', style: { color: '#111111' } }
     },
     legend: {
       enabled: true,
