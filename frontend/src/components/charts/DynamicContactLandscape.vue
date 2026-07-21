@@ -20,9 +20,6 @@ const systemsStore = useSystemsStore()
 const chartContainer = ref(null)
 let chart = null
 
-const PERSISTENCE_SPLIT = 70
-const EXPRESSION_SPLIT = 50
-
 const markerRadius = (typePersistence) => 7 + Math.sqrt(typePersistence) * 13
 
 const spreadOverlappingPoints = (points) => {
@@ -100,13 +97,6 @@ const buildFrameTimeline = (frames, totalFrames) => {
   </div>`
 }
 
-const getRegion = (pairPersistence, typeExpression) => {
-  if (pairPersistence >= PERSISTENCE_SPLIT && typeExpression >= EXPRESSION_SPLIT) return 'Persistent Dominant Mode'
-  if (pairPersistence >= PERSISTENCE_SPLIT) return 'Persistent Secondary Mode'
-  if (typeExpression >= EXPRESSION_SPLIT) return 'Episodic Dominant Mode'
-  return 'Fleeting Minor Mode'
-}
-
 const updateChart = () => {
   if (!chartContainer.value) return
 
@@ -160,8 +150,7 @@ const updateChart = () => {
           typeFrameCount: entry.frames.length,
           frames: entry.frames,
           totalFrames,
-          showLabel: index === 0,
-          region: getRegion(pairPersistence * 100, typeExpression * 100)
+          showLabel: index === 0
         }
       })
     })
@@ -293,7 +282,6 @@ const updateChart = () => {
         return `<div style="padding:10px;min-width:290px;">
           <div style="font-size:15px;font-weight:700;margin-bottom:6px;">${custom.pair}</div>
           <div style="font-weight:700;color:${getInteractionBaseColor(custom.interactionType)};">${custom.interactionType}</div>
-          <div><b>${custom.region}</b></div>
           <div style="margin-top:5px;">Pair persistence: <b>${Math.round(custom.pairPersistence * 100)}%</b></div>
           <div>Interaction expression: <b>${Math.round(custom.typeExpression * 100)}%</b> of pair-contact frames</div>
           <div>Trajectory persistence: <b>${Math.round(custom.typePersistence * 100)}%</b> (${custom.typeFrameCount} of ${custom.totalFrames} frames)</div>
