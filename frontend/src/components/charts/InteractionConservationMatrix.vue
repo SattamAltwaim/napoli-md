@@ -12,8 +12,8 @@
       <!-- Pair Conservation Threshold (like FilteredHeatmap) -->
       <div class="slider-group">
         <label for="pair-conservation-slider" class="slider-label">
-          Pair Conservation Threshold
-          <span class="info-icon" @mouseenter="showTooltip($event, 'Filter residue pairs by their overall conservation. Only pairs present in at least this percentage of trajectory frames will be shown.')" @mouseleave="hideTooltip">ⓘ</span>
+          Minimum Pair Conservation (filter)
+          <span class="info-icon" @mouseenter="showTooltip($event, 'This is a minimum filter, not the conservation value assigned to each pair. For example, 0% includes every pair; each card still shows that pair’s measured conservation.')" @mouseleave="hideTooltip">ⓘ</span>
         </label>
         <div class="slider-container">
           <div class="slider-control">
@@ -50,7 +50,7 @@
             <span class="percent-symbol">%</span>
           </div>
         </div>
-        <p class="slider-description">Show pairs present in at least {{ Math.round(chartUiStore.currentThreshold * 100) }}% of frames</p>
+        <p class="slider-description">Include pairs present in at least {{ Math.round(chartUiStore.currentThreshold * 100) }}% of frames; cards show each pair’s actual conservation</p>
       </div>
       
       <!-- Type Conservation Threshold -->
@@ -638,6 +638,9 @@ const updateChart = async () => {
               frame: frameNum,
               pairConsistency: interaction.consistency,
               typeConservation: typeConservation,
+              pairFrameCount: interaction.frameCount ?? interaction.frames?.length,
+              typeFrameCount: framesSet.size,
+              totalFrames: totalFrames,
               distance: distance,
               custom: {
                 pair: pairData.pair,
@@ -645,6 +648,9 @@ const updateChart = async () => {
                 frame: frameNum,
                 pairConsistency: interaction.consistency,
                 typeConservation: typeConservation,
+                pairFrameCount: interaction.frameCount ?? interaction.frames?.length,
+                typeFrameCount: framesSet.size,
+                totalFrames: totalFrames,
                 typesArray: interaction.typesArray,
                 distance: distance,
                 allFrames: framesForType
@@ -683,6 +689,9 @@ const updateChart = async () => {
         frame: point.frame,
         pairConsistency: point.pairConsistency,
         typeConservation: point.typeConservation,
+        pairFrameCount: point.pairFrameCount,
+        typeFrameCount: point.typeFrameCount,
+        totalFrames: point.totalFrames,
         distance: point.distance
       }
       allDataPoints.push(dataPoint)
@@ -972,9 +981,9 @@ const updateChart = async () => {
                 pair: point.custom?.pair || point.pair,
                 type: point.custom?.type || point.type,
                 frame: point.custom?.frame || point.frame,
-                pairConsistency: point.custom?.pairConsistency || point.pairConsistency,
-                typeConservation: point.custom?.typeConservation || point.typeConservation,
-                distance: point.custom?.distance || point.distance,
+                pairConsistency: point.custom?.pairConsistency ?? point.pairConsistency,
+                typeConservation: point.custom?.typeConservation ?? point.typeConservation,
+                distance: point.custom?.distance ?? point.distance,
                 frames: point.custom?.allFrames || []
               }
               showTrajectoryModal.value = true
@@ -1118,8 +1127,19 @@ const updateChart = async () => {
         // Handle heatmap series
         const custom = point.custom || {}
         
-        const frame = custom.frame || point.frame
-        const distance = custom.distance || point.distance
+        const frame = custom.frame ?? point.frame
+        const distance = custom.distance ?? point.distance
+        const typeConservation = custom.typeConservation ?? point.typeConservation ?? 0
+        const pairConsistency = custom.pairConsistency ?? point.pairConsistency ?? 0
+        const typeFrameCount = custom.typeFrameCount ?? point.typeFrameCount
+        const pairFrameCount = custom.pairFrameCount ?? point.pairFrameCount
+        const frameTotal = custom.totalFrames ?? point.totalFrames
+        const typeFrameDetail = typeFrameCount !== undefined && frameTotal
+          ? ` (${typeFrameCount}/${frameTotal} frames)`
+          : ''
+        const pairFrameDetail = pairFrameCount !== undefined && frameTotal
+          ? ` (${pairFrameCount}/${frameTotal} frames)`
+          : ''
         
         const distanceHtml = distance !== null && distance !== undefined
           ? `<div style="margin-bottom: 4px;">
@@ -1142,12 +1162,12 @@ const updateChart = async () => {
               <span style="color: #6e6e73;">${custom.type || point.type || 'N/A'}</span>
             </div>
             <div style="margin-bottom: 4px;">
-              <span style="color: #1d1d1f; font-weight: 600;">Type Conservation: </span>
-              <span style="color: #6e6e73;">${Math.round((custom.typeConservation || point.typeConservation || 0) * 100)}%</span>
+              <span style="color: #1d1d1f; font-weight: 600;">Type Conservation (actual): </span>
+              <span style="color: #6e6e73;">${Math.round(typeConservation * 100)}%${typeFrameDetail}</span>
             </div>
             <div style="margin-bottom: 4px;">
-              <span style="color: #1d1d1f; font-weight: 600;">Pair Conservation: </span>
-              <span style="color: #6e6e73;">${Math.round((custom.pairConsistency || point.pairConsistency || 0) * 100)}%</span>
+              <span style="color: #1d1d1f; font-weight: 600;">Pair Conservation (actual): </span>
+              <span style="color: #6e6e73;">${Math.round(pairConsistency * 100)}%${pairFrameDetail}</span>
             </div>
             ${distanceHtml}
             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e8ed; font-size: 12px; color: #86868b;">
