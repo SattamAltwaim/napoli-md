@@ -111,18 +111,22 @@ const updateChart = () => {
 
   const totalFrames = systemsStore.totalFrames || 1
   const selectedTypes = chartUiStore.selectedInteractionTypes
-  if (!analysisStore.interactions.length || selectedTypes.size === 0) {
+  const interactions = analysisStore.filteredInteractions
+  if (!interactions.length || selectedTypes.size === 0) {
     if (chart) {
       chart.destroy()
       chart = null
     }
-    chartContainer.value.innerHTML = '<div style="text-align:center;padding:100px 20px;color:#6e6e73;font-size:19px;">Select at least one interaction type to build the landscape.</div>'
+    const message = selectedTypes.size === 0
+      ? 'Select at least one interaction type to build the landscape.'
+      : `No residue pairs meet the ${Math.round(chartUiStore.currentThreshold * 100)}% conservation threshold.`
+    chartContainer.value.innerHTML = `<div style="text-align:center;padding:100px 20px;color:#6e6e73;font-size:19px;">${message}</div>`
     return
   }
 
   const points = []
-  const labelSide = chooseChangingResidueSide(analysisStore.interactions)
-  for (const interaction of analysisStore.interactions) {
+  const labelSide = chooseChangingResidueSide(interactions)
+  for (const interaction of interactions) {
     const allTypeEntries = (interaction.typesArray || [])
       .map(type => ({
         type,
@@ -335,7 +339,8 @@ const updateChart = () => {
 onMounted(updateChart)
 watch([
   () => chartUiStore.currentChartType,
-  () => analysisStore.interactions.length,
+  () => analysisStore.filteredInteractions.length,
+  () => chartUiStore.currentThreshold,
   () => chartUiStore.selectedInteractionTypes.size,
   () => systemsStore.currentSystem?.id
 ], () => {

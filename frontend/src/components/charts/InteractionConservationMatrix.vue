@@ -462,27 +462,15 @@ const updateChart = async () => {
   // Load atom pair data for all pairs first (if not already loaded)
   await loadAtomPairDataForAllPairs()
 
-  // Use filteredInteractions which already applies the interaction type filter
-  const allInteractions = analysisStore.filteredInteractions
-
-  if (allInteractions.length === 0) {
-    if (chart) {
-      chart.destroy()
-      chart = null
-    }
-    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interactions found. Try adjusting the threshold or interaction type filters.</div>'
-    return
-  }
-
-  // LEVEL 1: Filter pairs by overall conservation (using pairConservationThreshold)
-  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= chartUiStore.currentThreshold)
+  // The shared getter applies pair conservation and interaction type filters.
+  const stablePairs = analysisStore.filteredInteractions
 
   if (stablePairs.length === 0) {
     if (chart) {
       chart.destroy()
       chart = null
     }
-    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No pairs found with ≥${Math.round(chartUiStore.currentThreshold * 100)}% conservation.</div>`
+    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interactions found. Try adjusting the threshold or interaction type filters.</div>'
     return
   }
 
@@ -1231,8 +1219,7 @@ const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
 const loadAtomPairDataForAllPairs = async () => {
   if (!systemsStore.currentSystem) return
   
-  const allInteractions = analysisStore.filteredInteractions
-  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= chartUiStore.currentThreshold)
+  const stablePairs = analysisStore.filteredInteractions
   
   if (stablePairs.length === 0) return
   
