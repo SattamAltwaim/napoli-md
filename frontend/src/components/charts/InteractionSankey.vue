@@ -56,7 +56,7 @@ const updateChart = () => {
 
       const color = getInteractionBaseColor(type)
       const colorArray = getInteractionColorArray(type)
-      const linkColor = `rgba(${colorArray[0]}, ${colorArray[1]}, ${colorArray[2]}, 0.48)`
+      const linkColor = `rgba(${colorArray[0]}, ${colorArray[1]}, ${colorArray[2]}, 0.68)`
       const weight = Math.max(1, Math.round(persistence * 100))
       const custom = {
         pair: `${source} ↔ ${target}`,
@@ -68,14 +68,14 @@ const updateChart = () => {
         id: source,
         name: source,
         column: 0,
-        color: '#3B6EF5',
+        color: '#2563EB',
         custom: { role: `Chain ${row.chain1} residue` }
       })
       nodes.set(target, {
         id: target,
         name: target,
         column: 1,
-        color: '#8E8E93',
+        color: '#6B7280',
         custom: { role: `Chain ${row.chain2} residue` }
       })
 
@@ -89,34 +89,63 @@ const updateChart = () => {
 
   if (chart) chart.destroy()
 
+  const sourceNodeCount = [...nodes.values()].filter(node => node.column === 0).length
+  const dynamicHeight = Math.max(720, Math.min(1040, sourceNodeCount * 34 + 190))
   const systemName = systemsStore.currentSystem?.name || 'System'
   const chartOptions = {
     chart: {
       backgroundColor: 'transparent',
-      height: 760,
-      spacingTop: 30,
-      spacingBottom: 30
+      height: dynamicHeight,
+      spacingTop: 24,
+      spacingRight: 28,
+      spacingBottom: 24,
+      spacingLeft: 28,
+      events: {
+        render: function () {
+          const sankeySeries = this.series.find(series => series.type === 'sankey')
+          for (const point of sankeySeries?.points || []) {
+            point.graphic?.attr({
+              stroke: '#ffffff',
+              'stroke-width': 1.25,
+              'stroke-linejoin': 'round'
+            })
+          }
+        }
+      }
     },
     title: {
       text: `${systemName} — Interaction Sankey Diagram`,
-      style: { fontSize: '24px', fontWeight: '600', color: '#1d1d1f' }
+      margin: 20,
+      style: { fontSize: '22px', fontWeight: '600', color: '#111111' }
     },
-    subtitle: {
-      text: 'Flow: chain A residue → chain B residue | Color = interaction type | Link width = type conservation %',
-      style: { fontSize: '14px', color: '#6e6e73' }
-    },
+    subtitle: { text: null },
     credits: { enabled: false },
+    xAxis: { visible: false },
+    yAxis: { visible: false, title: { text: null } },
     legend: {
       enabled: true,
       align: 'right',
       verticalAlign: 'middle',
       layout: 'vertical',
-      itemStyle: { fontSize: '11px', fontWeight: '500', color: '#1d1d1f' },
+      margin: 20,
+      padding: 0,
+      itemMarginTop: 3,
+      itemMarginBottom: 3,
+      title: {
+        text: 'Interaction type',
+        style: { fontSize: '11px', fontWeight: '600', color: '#4b5563' }
+      },
+      itemStyle: { fontSize: '11px', fontWeight: '500', color: '#111111' },
+      itemHoverStyle: { color: '#000000' },
       itemHiddenStyle: { color: '#b6b6ba' },
       symbolRadius: 6
     },
     plotOptions: {
       series: {
+        animation: false,
+        states: {
+          inactive: { opacity: 0.18 }
+        },
         events: {
           legendItemClick: function () {
             const type = this.options.custom?.interactionType
@@ -138,20 +167,24 @@ const updateChart = () => {
         showInLegend: false,
         data: links,
         nodes: Array.from(nodes.values()),
-        nodeWidth: 24,
-        nodePadding: 16,
-        borderWidth: 0,
+        nodeWidth: 18,
+        nodePadding: 0,
+        borderWidth: 1,
+        borderColor: '#ffffff',
         curveFactor: 0,
-        linkOpacity: 0.7,
+        linkOpacity: 0.82,
         minLinkWidth: 3,
         dataLabels: {
           enabled: true,
           nodeFormat: '{point.name}',
+          padding: 0,
+          allowOverlap: false,
           style: {
-            fontSize: '11px',
+            fontSize: '10px',
             fontWeight: '600',
-            color: '#1d1d1f',
-            textOutline: '2px rgba(255,255,255,0.9)'
+            color: '#111111',
+            textOutline: '2px rgba(255,255,255,0.95)',
+            fontVariantNumeric: 'tabular-nums'
           }
         }
       },
@@ -171,10 +204,11 @@ const updateChart = () => {
     ],
     tooltip: {
       backgroundColor: 'rgba(255,255,255,0.98)',
-      borderRadius: 12,
+      borderRadius: 8,
       borderWidth: 1,
       borderColor: '#d2d2d7',
       useHTML: true,
+      outside: true,
       nodeFormatter: function () {
         const role = this.options.custom?.role || 'Node'
         const links = [...(this.linksFrom || []), ...(this.linksTo || [])]
