@@ -179,10 +179,14 @@ const updateChart = () => {
   const bubbleSizing = getBubbleSizing(points.length)
 
   for (const point of points) {
+    const normalizedPersistence = Math.max(0, Math.min(1, point.custom.typePersistence))
+    const bubbleDiameter = bubbleSizing.minSize +
+      (bubbleSizing.maxSize - bubbleSizing.minSize) * Math.sqrt(normalizedPersistence)
+
     point.labelrank = point.custom.typePersistence * 1000 + point.custom.pairPersistence * 100
     point.dataLabels = {
       enabled: true,
-      y: -(Math.round(bubbleSizing.maxSize / 2) + 5)
+      y: -(Math.round(bubbleDiameter / 2) + 4)
     }
   }
 
@@ -283,13 +287,11 @@ const updateChart = () => {
           enabled: true,
           align: 'center',
           allowOverlap: false,
-          backgroundColor: 'rgba(255,255,255,0.82)',
-          borderColor: 'rgba(17,17,17,0.12)',
-          borderRadius: 2,
-          borderWidth: 1,
+          backgroundColor: 'transparent',
+          borderWidth: 0,
           crop: false,
           overflow: 'allow',
-          padding: 1,
+          padding: 0,
           useHTML: false,
           formatter: function () {
             return this.point.name
@@ -298,7 +300,7 @@ const updateChart = () => {
             fontSize: bubbleSizing.labelFontSize,
             fontWeight: '600',
             color: '#111111',
-            textOutline: 'none'
+            textOutline: '2px #ffffff'
           }
         }
       }
