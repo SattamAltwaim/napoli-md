@@ -34,13 +34,15 @@ const updateChart = () => {
 
   const systemName = systemsStore.currentSystem?.name || 'System'
 
-  // Build per-residue overall conservation
+  // Build per-residue overall conservation from the NA/protein side.
+  // The second residue is the ligand and is normally identical for every pair,
+  // so grouping on resName2/resNum2/chain2 collapses the radar to one axis.
   const residueMap = new Map()
   for (const row of interactions) {
-    const key = formatResidueId(row.resName2, row.resNum2, row.chain2)
+    const key = formatResidueId(row.resName1, row.resNum1, row.chain1)
     if (!key) continue
     if (!residueMap.has(key)) {
-      residueMap.set(key, { id: key, resNum: row.resNum2, consistency: 0 })
+      residueMap.set(key, { id: key, resNum: row.resNum1, consistency: 0 })
     }
     const entry = residueMap.get(key)
     if ((row.consistency || 0) > entry.consistency) entry.consistency = row.consistency
@@ -63,7 +65,7 @@ const updateChart = () => {
       style: { fontSize: '24px', fontWeight: '600', color: '#1d1d1f' }
     },
     subtitle: {
-      text: `Each axis = chain B residue | Shape = overall pair conservation %`,
+      text: `Each axis = interacting protein/NA residue | Shape = overall pair conservation %`,
       style: { fontSize: '14px', color: '#6e6e73' }
     },
     credits: { enabled: false },
